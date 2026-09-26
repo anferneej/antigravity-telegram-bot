@@ -215,5 +215,25 @@
     "target_bot": "youtube",
     "enabled": true,
     "description": "好葉 YouTube 頻道個人成長、動畫書摘與高效思維影片重點解析"
+  },
+  {
+    "id": "yt_UCjlPLMYEsq0pjgLL1q24mSg",
+    "name": "🎬 邦妮區塊鏈 (YouTube 加密市場與產業解析)",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCjlPLMYEsq0pjgLL1q24mSg",
+    "original_url": "https://www.youtube.com/@BonnieBlockchain",
+    "type": "youtube",
+    "target_bot": "youtube",
+    "enabled": true,
+    "description": "邦妮區塊鏈 YouTube 頻道最新加密貨幣行情與深度產業專訪重點解析"
+  },
+  {
+    "id": "yt_UC_whOg3XES3Fihic53fvo4Q",
+    "name": "🎬 軟工柴熊 Terry (YouTube 軟體工程與矽谷職涯)",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC_whOg3XES3Fihic53fvo4Q",
+    "original_url": "https://www.youtube.com/@hackbearterry",
+    "type": "youtube",
+    "target_bot": "youtube",
+    "enabled": true,
+    "description": "軟工柴熊 Terry YouTube 頻道軟體工程師職涯、矽谷工作文化與技術專訪深度解析"
   }
 ]

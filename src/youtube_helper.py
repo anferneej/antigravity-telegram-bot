@@ -347,7 +347,7 @@ def analyze_youtube_video_detailed(title: str, url: str, description: str = "", 
             if cur:
                 raw_sentences.append(" ".join(cur))
 
-        # 篩選具備高資訊量、非寒暄的實質論述句子
+        # 篩選具備高資訊量、非寒暄的實質論述句子（限制最多 80 句以保證秒級高效）
         informative_sentences = []
         for s in raw_sentences:
             s_clean = s.strip()
@@ -357,23 +357,26 @@ def analyze_youtube_video_detailed(title: str, url: str, description: str = "", 
             if any(noise in s_clean for noise in ["訂閱頻道", "按讚分享", "開啟小鈴鐺", "點擊下方連結", "下一集再見", "我是好葉", "哈囉大家好", "Hello Guys"]):
                 continue
             
-            # 若為英文，翻譯繁中
-            if is_english:
-                translated = translate_en_to_zh_tw(s_clean)
-                informative_sentences.append(ensure_complete_sentence(translated))
-            else:
-                informative_sentences.append(ensure_complete_sentence(s_clean))
+            informative_sentences.append(ensure_complete_sentence(s_clean))
+            if len(informative_sentences) >= 80:
+                break
 
         if len(informative_sentences) >= 4:
             # 依開篇、中段論證、案例、結論挑選精華句子
             step = max(1, len(informative_sentences) // 5)
-            selected = [
-                f"【核心問題與背景】{informative_sentences[0]}",
-                f"【第一核心觀點】{informative_sentences[min(step, len(informative_sentences)-1)]}",
-                f"【深入論證展開】{informative_sentences[min(step * 2, len(informative_sentences)-1)]}",
-                f"【關鍵案例故事】{informative_sentences[min(step * 3, len(informative_sentences)-1)]}",
-                f"【總結啟發與行動】{informative_sentences[-1]}"
+            raw_selected = [
+                informative_sentences[0],
+                informative_sentences[min(step, len(informative_sentences)-1)],
+                informative_sentences[min(step * 2, len(informative_sentences)-1)],
+                informative_sentences[min(step * 3, len(informative_sentences)-1)],
+                informative_sentences[-1]
             ]
+            # 僅對最後入選的 5 點執行翻譯（若為英文）
+            labels = ["【核心問題與背景】", "【第一核心觀點】", "【深入論證展開】", "【關鍵案例故事】", "【總結啟發與行動】"]
+            selected = []
+            for lbl, txt in zip(labels, raw_selected):
+                final_txt = translate_en_to_zh_tw(txt) if is_english else txt
+                selected.append(f"{lbl}{ensure_complete_sentence(final_txt)}")
             return selected
 
         elif informative_sentences:
