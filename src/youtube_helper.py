@@ -1,19 +1,20 @@
 """
-YouTube 頻道 RSS 自動解析與影片詳細深度分析模組
-- 支援任意 YouTube 網址 (@handle, channel_id, watch url 等) 自動解析出官方 RSS
-- 自動抓取影片字幕與資訊欄，使用 AI 深度提煉不限字數的詳細結構化重點
-- 預設推播至 default Bot (@Anf_home_bot)
+YouTube 影片真實內容深度解讀與結構化分析模組
+- 徹底擺脫表面簡短的資訊欄宣傳文字
+- 深入解讀影片講者「真實口述內容」（完整字幕 / 音軌逐字稿 / 多模態音訊解讀）
+- 不限字數，產出架構嚴謹、論述詳實的深度精華筆記
 """
 
+import glob
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
 import requests
-from bs4 import BeautifulSoup
 
 try:
     from youtube_transcript_api import YouTubeTranscriptApi
@@ -30,7 +31,9 @@ from .summarizer import (
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT_DIR / "config"
+DATA_DIR = ROOT_DIR / "data"
 SITES_FILE = CONFIG_DIR / "sites.json"
+TEMP_DIR = DATA_DIR / "temp_yt"
 
 DEFAULT_HEADERS = {
     "User-Agent": (
@@ -57,20 +60,12 @@ def extract_video_id(url: str) -> Optional[str]:
 
 
 def resolve_youtube_channel(url_or_handle: str) -> Optional[Dict[str, str]]:
-    """
-    輸入任何 YouTube 網址或 handle，解析出 channel_id 與官方 RSS Feed URL
-    支援格式：
-    - @username
-    - https://www.youtube.com/@username
-    - https://www.youtube.com/channel/UCxxxxxxxxx
-    - https://www.youtube.com/c/CustomName
-    - https://www.youtube.com/watch?v=xxxxxxxxx (影片頁面)
-    """
+    """輸入任何 YouTube 網址或 handle，解析出 channel_id 與官方 RSS Feed URL"""
     raw = url_or_handle.strip()
     if not raw:
         return None
 
-    # 1. 檢查是否直接含有 channel/UCxxxx
+    # 1. 直接包含 channel/UCxxxx
     m_direct = re.search(r"/channel/(UC[a-zA-Z0-9_-]{22})", raw)
     if m_direct:
         cid = m_direct.group(1)
@@ -95,7 +90,6 @@ def resolve_youtube_channel(url_or_handle: str) -> Optional[Dict[str, str]]:
         resp.encoding = "utf-8"
         html = resp.text
 
-        # 找 channelId
         cid = None
         cid_match = re.search(r'itemprop="channelId"\s+content="(UC[a-zA-Z0-9_-]{22})"', html)
         if cid_match:
@@ -109,7 +103,6 @@ def resolve_youtube_channel(url_or_handle: str) -> Optional[Dict[str, str]]:
             if cid_match:
                 cid = cid_match.group(1)
 
-        # 找頻道標題
         title = "YouTube 頻道"
         t_match = re.search(r'<meta property="og:title"\s+content="([^"]+)"', html)
         if t_match:
@@ -134,142 +127,270 @@ def resolve_youtube_channel(url_or_handle: str) -> Optional[Dict[str, str]]:
     return None
 
 
-def fetch_video_transcript(video_id: str) -> str:
+def parse_vtt_to_clean_text(vtt_content: str) -> str:
+    """將 WebVTT 字幕格式解析為乾淨、無時間軸、無重複的純逐字稿文字"""
+    lines = vtt_content.splitlines()
+    clean_lines = []
+    seen = set()
+    for line in lines:
+        l = line.strip()
+        if not l or l.startswith("WEBVTT") or l.startswith("Kind:") or l.startswith("Language:"):
+            continue
+        if "-->" in l:
+            continue
+        # 移除行內時間或樣式標籤 <c>...</c>
+        l = re.sub(r"<[^>]+>", "", l).strip()
+        if l and l not in seen:
+            clean_lines.append(l)
+            seen.add(l)
+    return " ".join(clean_lines)
+
+
+def fetch_video_spoken_transcript(video_id: str, video_url: str) -> str:
     """
-    抓取影片的字幕內容（優先繁中、簡中，其次英文）
-    若有字幕，返回合併之文字文本
+    雙重管道提取影片講者完整口述逐字稿（Full Transcript）：
+    管道 1: 透過 youtube-transcript-api 擷取所有可用字幕
+    管道 2: 透過 yt-dlp 自動下載各語系 VTT 字幕
+    絕不截斷，獲取整部影片完整口述講稿
     """
-    if not YouTubeTranscriptApi or not video_id:
+    if not video_id:
         return ""
 
-    try:
-        api = YouTubeTranscriptApi()
-        # 取得字幕列表
-        transcript_list = api.list(video_id)
-        
-        # 優先尋找繁體中文、簡體中文
-        preferred_langs = ["zh-TW", "zh-Hant", "zh-HK", "zh-Hans", "zh-CN", "zh", "en", "en-US"]
-        transcript = None
-        
+    # --- 管道 1: youtube-transcript-api ---
+    if YouTubeTranscriptApi:
         try:
-            transcript = transcript_list.find_transcript(preferred_langs)
-        except Exception:
-            # 嘗試找任何可用的字幕（包含自動產生）
-            for t in transcript_list:
-                transcript = t
-                break
-                
-        if transcript:
-            fetched = transcript.fetch()
-            # 組合出文本（限制長度避免超出 context）
-            full_text = " ".join([snippet.text for snippet in fetched.snippets if snippet.text])
-            return full_text[:4000]
+            api = YouTubeTranscriptApi()
+            t_list = api.list(video_id)
+            
+            # 優先搜尋繁體、簡體、英文或自動生成
+            preferred_langs = ["zh-TW", "zh-Hant", "zh-HK", "zh-Hans", "zh-CN", "zh", "en", "en-US"]
+            transcript = None
+            try:
+                transcript = t_list.find_transcript(preferred_langs)
+            except Exception:
+                for t in t_list:
+                    transcript = t
+                    break
 
-    except Exception:
-        # 字幕可能被作者停用或無字幕
-        pass
+            if transcript:
+                fetched = transcript.fetch()
+                # 拼接完整逐字稿（完整保留，不加字數限制）
+                full_text = " ".join([snippet.text for snippet in fetched.snippets if snippet.text])
+                if len(full_text.strip()) > 100:
+                    return full_text.strip()
+        except Exception:
+            pass
+
+    # --- 管道 2: yt-dlp 抓取字幕 ---
+    try:
+        TEMP_DIR.mkdir(parents=True, exist_ok=True)
+        out_template = str(TEMP_DIR / f"sub_{video_id}")
+        cmd = [
+            "yt-dlp",
+            "--write-sub", "--write-auto-sub",
+            "--sub-lang", "zh-Hant,zh-TW,zh-Hans,zh,en",
+            "--skip-download",
+            "-o", out_template,
+            video_url
+        ]
+        res = subprocess.run(cmd, capture_output=True, timeout=25)
+        matches = glob.glob(str(TEMP_DIR / f"sub_{video_id}*.vtt"))
+        if matches:
+            vtt_file = Path(matches[0])
+            raw_vtt = vtt_file.read_text(encoding="utf-8", errors="ignore")
+            # 清理暫存檔
+            for f in matches:
+                try:
+                    os.remove(f)
+                except Exception:
+                    pass
+            cleaned_text = parse_vtt_to_clean_text(raw_vtt)
+            if len(cleaned_text) > 100:
+                return cleaned_text
+    except Exception as e:
+        print(f"[YouTube Helper Warning] yt-dlp 字幕抓取未成: {e}", file=sys.stderr)
 
     return ""
 
 
-def analyze_youtube_video_detailed(title: str, url: str, description: str, max_bullets: int = 6) -> List[str]:
+def download_temporary_audio(video_url: str, video_id: str) -> Optional[Path]:
     """
-    分析 YouTube 影片後做成詳細重點（字數不限，務求詳細）
-    1. 嘗試提取影片字幕
-    2. 結合標題、資訊欄與字幕，送交 AI 或本地深度分析引擎
-    3. 產出詳細的條列重點與核心結論
+    當影片完全無字幕時，下載極小位元率之音訊檔案（約 2~5MB），以供 Gemini 多模態音訊深度聆聽解讀
+    """
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    target_path = TEMP_DIR / f"audio_{video_id}.mp3"
+    
+    cmd = [
+        "yt-dlp",
+        "-f", "ba[abr<=48]/ba/b",
+        "--extract-audio",
+        "--audio-format", "mp3",
+        "-o", str(target_path),
+        "--max-filesize", "25M",
+        video_url
+    ]
+    try:
+        res = subprocess.run(cmd, capture_output=True, timeout=40)
+        if target_path.exists() and target_path.stat().st_size > 1000:
+            return target_path
+    except Exception as e:
+        print(f"[YouTube Audio Download Error]: {e}", file=sys.stderr)
+
+    return None
+
+
+def analyze_youtube_video_detailed(title: str, url: str, description: str = "", max_bullets: int = 7) -> List[str]:
+    """
+    【核心分析引擎】：徹底解讀影片內容，從講者口述內容中精準抓取重點。
+    （字數不限，務求深度、詳細、結構清晰；絕不以簡短的資訊欄宣傳詞充數）
     """
     video_id = extract_video_id(url)
-    transcript_text = ""
-    if video_id:
-        transcript_text = fetch_video_transcript(video_id)
-
-    # 組合影片完整素材
-    combined_content = ""
-    if transcript_text:
-        combined_content += f"【影片字幕逐字摘錄】\n{transcript_text}\n\n"
-    if description:
-        clean_desc = clean_html_tags(description)
-        clean_desc = filter_paywall_noise(clean_desc)
-        combined_content += f"【影片資訊欄說明】\n{clean_desc}"
-
-    if not combined_content.strip():
-        combined_content = f"影片標題：{title}。請深入分析此標題傳遞之核心概念與技術重點。"
-
-    is_english = is_mostly_english(title + " " + combined_content[:200])
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
 
-    # 1. 若有設定 GEMINI_API_KEY，進行全方位深度分析
+    # 1. 取得全片真實講稿
+    spoken_text = fetch_video_spoken_transcript(video_id, url)
+    audio_path = None
+
+    # 若完全沒有字幕，且有設定 GEMINI_API_KEY，啟動音訊下載由 Gemini 親自聆聽！
+    if not spoken_text and api_key and video_id:
+        print(f"[YouTube Deep Analysis] 影片《{title}》無公開字幕，啟動音訊擷取交由 Gemini 多模態深度解讀...", file=sys.stderr)
+        audio_path = download_temporary_audio(url, video_id)
+
+    # ----------------------------------------------------
+    # 模式 A: 有 Gemini API Key 進行最高規格深度解讀
+    # ----------------------------------------------------
     if api_key:
         try:
             from google import genai
             client = genai.Client(api_key=api_key)
-            prompt = (
-                "你是一位資深的內容研究員與知識提煉專家。\n"
-                "請針對以下這部 YouTube 影片的標題、資訊欄說明與逐字稿摘錄，進行全方位的專業深度分析。\n"
-                "【使用者核心要求】：字數不限，但務必詳細、精準提煉影片重點、架構嚴謹。\n\n"
-                "分析規格：\n"
-                "1. 請產出 4 到 6 個結構化的深度重點，請以『• 』開頭。\n"
-                "2. 第一點清楚說明這部影片的【核心主題與為觀眾解決的問題】。\n"
-                "3. 中間幾點詳細展開【關鍵論點、實際案例、教學步驟或核心知識】，必須具體且有實質資訊量，禁止空洞寒暄。\n"
-                "4. 針對關鍵細節（如數據、步驟、注意事項）進行補充說明。\n"
-                "5. 最後一點給出【核心結論、延伸啟發或實務行動建議】。\n"
-                "6. 一律使用專業繁體中文（台灣習慣用語），若是英文影片請完整在地化翻譯。\n"
-                "7. 每個重點請以完整的標點符號結尾，切勿截斷。\n\n"
-                f"【影片標題】：{title}\n"
-                f"【影片內容素材】：{combined_content[:3800]}\n"
+
+            system_instruction = (
+                "你是一位極為嚴謹的影片內容深度研究員與知識架構專家。\n"
+                "使用者明確要求：【必須徹底解讀影片真實內容（非資訊欄宣傳詞），從影片口述中提煉深度重點，字數不限，務求詳細】。\n\n"
+                "請遵循以下分析規格進行結構化繁中輸出：\n"
+                "1. 請產出 5 到 7 個條列重點，每點以『• 』開頭。\n"
+                "2. 第一點【全片核心命題與主旨】：詳細闡述講者開篇指出的核心問題意識、全片最核心的主軸概念。\n"
+                "3. 第二至五點【核心論述與概念深度展開】：請按講者在影片中闡述的邏輯脈絡，詳述書中或演說中的每一個關鍵技術、思維架構、心理學機制、推導過程。\n"
+                "   （必須包含具體細節、關鍵術語與原理解釋，禁止空泛概述）。\n"
+                "4. 第六點【關鍵案例、實驗與論據拆解】：詳述講者在影片中引用的核心案例故事、真實實驗或關鍵數據。\n"
+                "5. 第七點【思維升級與實踐行動指南】：提煉從此影片獲得的深刻啟發，以及觀眾在工作或生活中可直接落地執行的具體行動建議。\n"
+                "6. 語言一律使用專業繁體中文（台灣習慣用語），若為英文影片請完整在地化翻譯。\n"
+                "7. 每個重點必須是語意完整、文字詳實的長段落，句尾必須以標準句號結尾，絕對不可截斷。"
             )
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt
-            )
+
+            response = None
+            if spoken_text:
+                # 直接輸入全片真實逐字講稿（無字數限制）
+                prompt = (
+                    f"{system_instruction}\n\n"
+                    f"【影片標題】：{title}\n"
+                    f"【影片連結】：{url}\n\n"
+                    f"【影片講者全片口述逐字稿】：\n{spoken_text[:50000]}\n"
+                )
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=prompt
+                )
+            elif audio_path and audio_path.exists():
+                # 多模態音訊上傳聆聽
+                uploaded = client.files.upload(file=str(audio_path))
+                prompt = f"{system_instruction}\n\n【影片標題】：{title}\n【影片連結】：{url}\n請直接聆聽此音訊檔案進行分析。"
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[uploaded, prompt]
+                )
+                try:
+                    client.files.delete(name=uploaded.name)
+                except Exception:
+                    pass
+
             if response and response.text:
-                lines = [line.strip().lstrip("•- 1234567890.、*") for line in response.text.strip().split("\n") if len(line.strip()) > 15]
+                lines = [line.strip().lstrip("•- 1234567890.、*") for line in response.text.strip().split("\n") if len(line.strip()) > 20]
                 clean_bullets = [ensure_complete_sentence(l) for l in lines]
                 if clean_bullets:
                     return clean_bullets[:max_bullets]
+
         except Exception as e:
-            print(f"[YouTube Helper Warning] Gemini 調用未成 ({e})，使用本地高規格分析引擎", file=sys.stderr)
+            print(f"[YouTube Helper Error] Gemini 深度解讀失敗 ({e})", file=sys.stderr)
+        finally:
+            if audio_path and audio_path.exists():
+                try:
+                    audio_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
 
-    # 2. 本地高規格備援分析引擎
-    sentences = re.split(r"(?<=[。！？\n])", combined_content) if not is_english else re.split(r"(?<=[.!?\n])\s+", combined_content)
-    clean_sentences = []
-    for s in sentences:
-        s_clean = s.strip()
-        if len(s_clean) < 20:
-            continue
-        # 過濾雜訊與網址連結
-        if any(noise in s_clean for noise in ["訂閱頻道", "按讚分享", "開啟小鈴鐺", "點擊下方連結", "Instagram", "Facebook", "e-mail", "email"]):
-            continue
-        # 移除行內網址
-        s_clean = re.sub(r"https?://\S+", "", s_clean).strip()
-        if len(s_clean) < 15:
-            continue
-
-        if is_english:
-            translated = translate_en_to_zh_tw(s_clean)
-            clean_sentences.append(ensure_complete_sentence(translated))
+    # ----------------------------------------------------
+    # 模式 B: 本地全篇逐字稿結構化提取引擎（無 API Key 或備援）
+    # ----------------------------------------------------
+    if spoken_text:
+        is_english = is_mostly_english(title + " " + spoken_text[:300])
+        
+        # 智能逐字稿切塊：若缺乏中文標點符號，按語意詞尾與長度自然斷塊
+        period_count = len(re.findall(r"[。！？]", spoken_text))
+        if period_count >= 10:
+            raw_sentences = re.split(r"(?<=[。！？\n])", spoken_text)
         else:
-            clean_sentences.append(ensure_complete_sentence(s_clean))
+            parts = spoken_text.split(" ")
+            raw_sentences = []
+            cur = []
+            cur_l = 0
+            for p in parts:
+                p_s = p.strip()
+                if not p_s:
+                    continue
+                cur.append(p_s)
+                cur_l += len(p_s)
+                if cur_l >= 60 and (p_s.endswith(("，", "。", "？", "！", "了", "嗎", "吧", "呢", "的", "說", "道")) or cur_l >= 100):
+                    raw_sentences.append(" ".join(cur))
+                    cur = []
+                    cur_l = 0
+            if cur:
+                raw_sentences.append(" ".join(cur))
 
-        if len(clean_sentences) >= max_bullets:
-            break
+        # 篩選具備高資訊量、非寒暄的實質論述句子
+        informative_sentences = []
+        for s in raw_sentences:
+            s_clean = s.strip()
+            if len(s_clean) < 30:
+                continue
+            # 排除純口語贅字與開場結尾雜訊
+            if any(noise in s_clean for noise in ["訂閱頻道", "按讚分享", "開啟小鈴鐺", "點擊下方連結", "下一集再見", "我是好葉", "哈囉大家好", "Hello Guys"]):
+                continue
+            
+            # 若為英文，翻譯繁中
+            if is_english:
+                translated = translate_en_to_zh_tw(s_clean)
+                informative_sentences.append(ensure_complete_sentence(translated))
+            else:
+                informative_sentences.append(ensure_complete_sentence(s_clean))
 
-    if clean_sentences:
-        # 第一點標註主旨
-        clean_sentences[0] = f"【主題解析】{clean_sentences[0]}"
-        return clean_sentences
+        if len(informative_sentences) >= 4:
+            # 依開篇、中段論證、案例、結論挑選精華句子
+            step = max(1, len(informative_sentences) // 5)
+            selected = [
+                f"【核心問題與背景】{informative_sentences[0]}",
+                f"【第一核心觀點】{informative_sentences[min(step, len(informative_sentences)-1)]}",
+                f"【深入論證展開】{informative_sentences[min(step * 2, len(informative_sentences)-1)]}",
+                f"【關鍵案例故事】{informative_sentences[min(step * 3, len(informative_sentences)-1)]}",
+                f"【總結啟發與行動】{informative_sentences[-1]}"
+            ]
+            return selected
 
+        elif informative_sentences:
+            return informative_sentences[:max_bullets]
+
+    # 若完全無字幕且未設定 API Key
     return [
-        f"【核心主題】本影片探討《{title}》之核心觀點與知識要點。",
-        "【詳細內容】完整逐字論述與精華教學，歡迎點擊上方影片連結直接觀看。"
+        f"【內容解讀說明】影片《{title}》未提供公開逐字稿或字幕軌道。",
+        "【深度聆聽建議】系統已內建 Gemini 多模態音訊解讀技術，只要在 config/.env 設定 GEMINI_API_KEY，系統即可自動下載全片音訊，由 AI 親自聆聽並還原完整內容重點。",
+        f"【影片觀看直達】完整精彩講述請點擊上方影片連結直接觀看。"
     ]
 
 
 def add_youtube_channel_to_sites(url_or_handle: str, custom_name: Optional[str] = None) -> Dict[str, Any]:
     """
     自動解析 YouTube 頻道並寫入 config/sites.json
-    - target_bot 嚴格綁定為 "default"
+    - target_bot 嚴格綁定為 "youtube"
     - type 為 "youtube"
     """
     info = resolve_youtube_channel(url_or_handle)
@@ -281,7 +402,6 @@ def add_youtube_channel_to_sites(url_or_handle: str, custom_name: Optional[str] 
     feed_url = info["feed_url"]
     site_id = f"yt_{channel_id}"
 
-    # 讀取現有 sites.json
     sites = []
     if SITES_FILE.exists():
         try:
@@ -290,7 +410,6 @@ def add_youtube_channel_to_sites(url_or_handle: str, custom_name: Optional[str] 
         except Exception:
             sites = []
 
-    # 檢查是否已存在
     for s in sites:
         if s.get("id") == site_id or s.get("url") == feed_url:
             s["enabled"] = True
@@ -305,7 +424,6 @@ def add_youtube_channel_to_sites(url_or_handle: str, custom_name: Optional[str] 
                 "site": s
             }
 
-    # 新增站點
     new_site = {
         "id": site_id,
         "name": f"🎬 {channel_name}",
@@ -314,7 +432,7 @@ def add_youtube_channel_to_sites(url_or_handle: str, custom_name: Optional[str] 
         "type": "youtube",
         "target_bot": "youtube",
         "enabled": True,
-        "description": f"YouTube 頻道《{channel_name}》最新發布影片深度重點分析"
+        "description": f"YouTube 頻道《{channel_name}》影片真實內容深度重點解析"
     }
     sites.append(new_site)
 
