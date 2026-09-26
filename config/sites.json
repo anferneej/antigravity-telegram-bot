@@ -1,25 +1,5 @@
 [
   {
-    "id": "wearn_hot",
-    "name": "聚財網焦點話題",
-    "url": "https://feeds.feedburner.com/hot_topics_wearncom?format=xml",
-    "original_url": "https://feeds.feedburner.com/hot_topics_wearncom?format=xml",
-    "type": "rss",
-    "target_bot": "finance",
-    "enabled": true,
-    "description": "聚財網 Feedburner 熱門焦點投資話題"
-  },
-  {
-    "id": "wearn_latest",
-    "name": "聚財網最新話題",
-    "url": "https://feeds.feedburner.com/Wearncom-?format=xml",
-    "original_url": "https://feeds.feedburner.com/Wearncom-?format=xml",
-    "type": "rss",
-    "target_bot": "finance",
-    "enabled": true,
-    "description": "聚財網 Feedburner 最新發文話題"
-  },
-  {
     "id": "wsj_chinese_traditional",
     "name": "華爾街日報 (WSJ 繁體中文熱門)",
     "url": "https://wsj.buzzing.cc/zh-Hant/feed.xml",
