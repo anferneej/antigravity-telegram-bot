@@ -20,6 +20,16 @@
     "description": "兩岸科技產業脈動與全球科技供應鏈深入報導"
   },
   {
+    "id": "thenewslens",
+    "name": "The News Lens 關鍵評論網",
+    "url": "https://feeds.feedburner.com/TheNewsLens",
+    "original_url": "https://feeds.feedburner.com/TheNewsLens",
+    "type": "rss",
+    "target_bot": "finance",
+    "enabled": true,
+    "description": "國際政治經濟脈動與深度政經時事觀點評論"
+  },
+  {
     "id": "reading_outpost",
     "name": "閱讀前哨站 (瓦基讀書心得)",
     "url": "https://readingoutpost.com/feed/",
@@ -28,6 +38,16 @@
     "target_bot": "reading",
     "enabled": true,
     "description": "瓦基閱讀前哨站最新說書、閱讀心得與個人成長文章"
+  },
+  {
+    "id": "playpc_esor",
+    "name": "電腦玩物 (Esor 數位工作術)",
+    "url": "http://feeds.feedburner.com/playpc",
+    "original_url": "http://feeds.feedburner.com/playpc",
+    "type": "rss",
+    "target_bot": "reading",
+    "enabled": true,
+    "description": "數位生產力、AI 工具應用與個人成長筆記"
   },
   {
     "id": "tanja_read",
@@ -88,5 +108,15 @@
     "target_bot": "tech",
     "enabled": true,
     "description": "DIGITIMES 深度產業研究與市場數據分析報告"
+  },
+  {
+    "id": "techcrunch_global",
+    "name": "TechCrunch (全球科技創投速遞)",
+    "url": "https://techcrunch.com/feed",
+    "original_url": "https://techcrunch.com/feed",
+    "type": "rss",
+    "target_bot": "tech",
+    "enabled": true,
+    "description": "全球矽谷科技巨頭動態與新創融資情報 (自動翻譯繁中摘要)"
   }
 ]

@@ -23,8 +23,41 @@ PAYWALL_NOISE_KEYWORDS = [
     "會員登入", "忘記密碼", "重寄啟用信", "記住帳號密碼", "帳號啟用",
     "會員服務申請", "試用申請", "產業研究諮詢", "會員服務介紹", "常見問題",
     "申請專線", "會員信箱", "訂閱DIGITIMES", "關鍵字追蹤", "版權所有",
-    "轉載請註明", "訂閱電子報", "請登入以閱讀全文", "付費會員限定", "廣告贊助"
+    "轉載請註明", "訂閱電子報", "請登入以閱讀全文", "付費會員限定", "廣告贊助",
+    "Sign in", "Subscribe to", "All rights reserved", "Terms of Service"
 ]
+
+
+def is_mostly_english(text: str) -> bool:
+    """判斷文字是否主要為英文"""
+    if not text:
+        return False
+    # 計算中文字元數量
+    chinese_chars = len(re.findall(r"[\u4e00-\u9fff]", text))
+    # 計算英文字母數量
+    english_chars = len(re.findall(r"[a-zA-Z]", text))
+    return english_chars > 30 and english_chars > (chinese_chars * 2)
+
+
+def translate_en_to_zh_tw(text: str) -> str:
+    """將英文文字翻譯為繁體中文（備援翻譯機制）"""
+    if not text or not is_mostly_english(text):
+        return text
+    try:
+        # 使用 MyMemory 免費翻譯 API
+        r = requests.get(
+            "https://api.mymemory.translated.net/get",
+            params={"q": text[:500], "langpair": "en|zh-TW"},
+            timeout=8
+        )
+        if r.status_code == 200:
+            data = r.json()
+            translated = data.get("responseData", {}).get("translatedText", "")
+            if translated and not translated.startswith("MYMEMORY WARNING"):
+                return translated
+    except Exception:
+        pass
+    return text
 
 
 def clean_html_tags(raw_text: str) -> str:
@@ -44,7 +77,6 @@ def filter_paywall_noise(text: str) -> str:
         l = line.strip()
         if not l or len(l) < 10:
             continue
-        # 若包含付費牆關鍵字則丟棄該行
         if any(noise in l for noise in PAYWALL_NOISE_KEYWORDS):
             continue
         clean_lines.append(l)
@@ -62,12 +94,10 @@ def extract_web_article_text(url: str, max_chars=4000) -> str:
         for tag in soup(["script", "style", "nav", "footer", "header", "noscript", "aside", "svg", "button", "form"]):
             tag.decompose()
 
-        # 針對特定 class 移除
         for bad_cls in ["login", "member", "paywall", "adv", "banner", "sidebar", "share"]:
             for el in soup.find_all(class_=re.compile(bad_cls, re.I)):
                 el.decompose()
 
-        # 尋找文章正文節點
         article_node = soup.select_one(
             "article, .content, .entry-content, .post-content, .article-content, #article-content, .news-content, .story-body, main"
         )
@@ -99,12 +129,9 @@ def ensure_complete_sentence(text: str) -> str:
 
 def summarize_article_professional(title: str, link: str, raw_description: str = "") -> list:
     """
-    以專業產業分析視角進行繁體中文深度全文摘要。
+    以專業產業分析視角進行全文深度摘要。
+    若原文為英文，一律自動翻譯並輸出結構完整的【繁體中文】要點。
     回傳完整的繁體中文要點清單 (list of bullets)。
-    嚴格要求：
-    1. 100% 繁體中文（台灣專業財經科技慣用語）。
-    2. 每個重點段落語意完整，句尾完整結尾，絕不截斷。
-    3. 專業結構：涵蓋事件核心、關鍵數據/商業邏輯、產業影響。
     """
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
 
@@ -116,8 +143,9 @@ def summarize_article_professional(title: str, link: str, raw_description: str =
         article_body = extract_web_article_text(link)
 
     full_context = article_body if article_body else raw_desc_clean
+    is_english = is_mostly_english(title + " " + full_context[:200])
 
-    # 1. 若有設定 GEMINI_API_KEY，由 Gemini 進行資深分析師級深度提煉
+    # 1. 若有設定 GEMINI_API_KEY，由 Gemini 進行資深分析師級深度提煉（英文自動翻譯為繁中）
     if api_key:
         try:
             from google import genai
@@ -125,10 +153,10 @@ def summarize_article_professional(title: str, link: str, raw_description: str =
             prompt = (
                 "你是一位資深的產業研究員與專業財經科技分析師。\n"
                 "請針對以下文章進行全文深度重點提煉，必須遵守以下嚴格規則：\n"
-                "1. 必須完全使用【繁體中文（台灣專業科技財經慣用語）】輸出。\n"
-                "2. 請提煉 2~3 個【核心重點】，每個重點必須是【結構完整、語意通順的完整段落】，"
+                "1. 【語言規範】：若原文為英文，請務必將內容精準翻譯並完全使用【繁體中文（台灣專業習慣用語）】輸出。\n"
+                "2. 【段落完整】：請提煉 2~3 個【核心重點】，每個重點必須是【結構完整、語意通順的完整段落】，"
                 "句尾必須以標準句號完結，【絕對不可在字句中間截斷】。\n"
-                "3. 從專業視角深入剖析，重點需包含：\n"
+                "3. 【專業分析維度】：重點需包含：\n"
                 "   • 【核心事件與事實全貌】\n"
                 "   • 【關鍵數據、技術規格或商業邏輯】\n"
                 "   • 【對產業鏈、上下游或市場未來的實質影響】\n"
@@ -146,16 +174,27 @@ def summarize_article_professional(title: str, link: str, raw_description: str =
                 if clean_bullets:
                     return clean_bullets[:3]
         except Exception as e:
-            print(f"[Summarizer Warning] Gemini 調用未成 ({e})，使用本地專業繁中完整句提取", file=sys.stderr)
+            print(f"[Summarizer Warning] Gemini 調用未成 ({e})，使用本地專業繁中完整句提取與翻譯", file=sys.stderr)
 
-    # 2. 本地備援高品質繁中提取（以完整標點句號為界限，絕不截字）
-    sentences = re.split(r"(?<=[。！？\n])", full_context)
+    # 2. 本地備援高品質提取（若為英文自動翻譯為繁體中文）
+    if is_english:
+        sentences = re.split(r"(?<=[.!?\n])\s+", full_context)
+    else:
+        sentences = re.split(r"(?<=[。！？\n])", full_context)
+
     clean_sentences = []
     for s in sentences:
         s_clean = s.strip()
         if len(s_clean) < 25 or any(noise in s_clean for noise in PAYWALL_NOISE_KEYWORDS):
             continue
-        clean_sentences.append(ensure_complete_sentence(s_clean))
+
+        # 如果是英文，翻譯為繁體中文
+        if is_english:
+            translated = translate_en_to_zh_tw(s_clean)
+            clean_sentences.append(ensure_complete_sentence(translated))
+        else:
+            clean_sentences.append(ensure_complete_sentence(s_clean))
+
         if len(clean_sentences) >= 3:
             break
 
@@ -163,6 +202,7 @@ def summarize_article_professional(title: str, link: str, raw_description: str =
         return clean_sentences
 
     if raw_desc_clean and len(raw_desc_clean) > 20:
-        return [ensure_complete_sentence(raw_desc_clean)]
+        final_text = translate_en_to_zh_tw(raw_desc_clean) if is_english else raw_desc_clean
+        return [ensure_complete_sentence(final_text)]
 
     return ["本篇詳細數據與專業深度分析，請點擊下方全文連結深入閱讀。"]
