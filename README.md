@@ -92,8 +92,12 @@ pip install -r requirements.txt
    # ⚡ 科技專屬 Bot
    TG_BOT_TOKEN_TECH=444444444:DDD...
    TG_CHAT_ID_TECH=1208138575
+
+   # 🎬 影音精選專屬 Bot
+   TG_BOT_TOKEN_YOUTUBE=555555555:EEE...
+   TG_CHAT_ID_YOUTUBE=1208138575
    ```
-3. **優點**：在「財經 Bot」點擊 `/today` 僅回覆財經消息；在「閱讀 Bot」點擊 `/today` 僅回覆閱讀心得，介面清爽專注！
+3. **優點**：五大領域機器人完全獨立，在「影音 Bot」點擊 `/today` 僅回覆 YouTube 說書與知識影片深度重點，介面清爽專注！
 
 ---
 
