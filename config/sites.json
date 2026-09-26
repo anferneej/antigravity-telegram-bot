@@ -30,6 +30,16 @@
     "description": "國際政治經濟脈動與深度政經時事觀點評論"
   },
   {
+    "id": "greenhorn_finance",
+    "name": "綠角財經筆記 (指數化投資與資產配置)",
+    "url": "https://greenhornfinancefootnote.blogspot.com/feeds/posts/default?redirect=no",
+    "original_url": "https://greenhornfinancefootnote.blogspot.com/",
+    "type": "rss",
+    "target_bot": "finance",
+    "enabled": true,
+    "description": "指數化投資、資產配置與全球金融市場觀察筆記"
+  },
+  {
     "id": "reading_outpost",
     "name": "閱讀前哨站 (瓦基讀書心得)",
     "url": "https://readingoutpost.com/feed/",
@@ -58,6 +68,29 @@
     "target_bot": "reading",
     "enabled": true,
     "description": "坦雅讀一讀部落格最新文章"
+  },
+  {
+    "id": "i_chentsai",
+    "name": "蔡依橙的閱讀筆記 (臨床研究與跨界思維)",
+    "url": "https://i-chentsai.innovarad.tw/",
+    "original_url": "https://i-chentsai.innovarad.tw/",
+    "type": "html",
+    "item_selector": "div.post",
+    "title_selector": "h2 a",
+    "link_selector": "h2 a",
+    "target_bot": "reading",
+    "enabled": true,
+    "description": "蔡依橙醫師個人思維、深度閱讀筆記與 AI 工作流實戰"
+  },
+  {
+    "id": "vocus_maxjamesread",
+    "name": "姆斯的閱讀空間 (方格子沙龍)",
+    "url": "https://vocus.cc/api/rss/salon/6453460ffd897800018c9186/articles",
+    "original_url": "https://vocus.cc/salon/6453460ffd897800018c9186/room/maxjamesread",
+    "type": "rss",
+    "target_bot": "reading",
+    "enabled": true,
+    "description": "姆斯的閱讀空間：深度閱讀書評、人生基礎能力與好書精華"
   },
   {
     "id": "vocus_77reading",
