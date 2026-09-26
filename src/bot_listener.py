@@ -33,6 +33,7 @@ from src.telegram_notifier import (
 from src.scraper import load_sites, load_settings
 from src.agent_workflow import get_pending_today_articles, run_multi_bot_dispatch
 from src.scheduler_service import run_check_and_notify, write_push_log
+from src.ai_assistant import answer_reply_question, answer_direct_question
 
 
 def get_telegram_updates(api_base: str, offset=None, timeout=25):
@@ -71,6 +72,14 @@ def send_reply_with_keyboard(api_base: str, chat_id: str, text: str, channel_id:
         requests.post(url, json=payload, timeout=10)
     except Exception as e:
         print(f"[Listener Error] 發送按鈕失敗: {e}", file=sys.stderr)
+
+
+def send_chat_action(api_base: str, chat_id: str, action: str = "typing"):
+    """發送輸入中狀態，提升手機端交互體驗"""
+    try:
+        requests.post(f"{api_base}/sendChatAction", json={"chat_id": chat_id, "action": action}, timeout=3)
+    except Exception:
+        pass
 
 
 def handle_today_request_for_channel(channel_id: str, channel_name: str):
@@ -172,6 +181,8 @@ def run_single_bot_listener(channel_id: str, token: str, chat_ids: list, channel
                     "• <b>📰 獲取今日最新情報</b>：立即抓取並提煉繁中重點摘要\n"
                     "• <b>🔍 查看監控網站</b>：檢視本頻道的資訊來源\n"
                     "• <b>⏰ 查看推播時間</b>：檢視每日定時推播時段\n"
+                    "• <b>💬 針對推播追問</b>：長按任何一則推播訊息點「<b>回覆 (Reply)</b>」，直接輸入您的問題！\n"
+                    "• <b>💡 專屬專家諮詢</b>：直接發送任何問題，本頻道 AI 專家將為您深入剖析！\n"
                 )
                 send_message(msg, channel=channel_id)
             elif text in ["/today", "/news", "📰 獲取今日最新情報"]:
@@ -181,7 +192,19 @@ def run_single_bot_listener(channel_id: str, token: str, chat_ids: list, channel
             elif text in ["/time", "⏰ 查看推播時間"]:
                 handle_time_request_for_channel(channel_id, channel_name)
             else:
-                send_message("💡 收到您的訊息！可以直接點擊下方按鈕或輸入 <code>/today</code> 獲取最新情報。", channel=channel_id)
+                # 檢查是否為「引用回覆追問」
+                reply_to = message.get("reply_to_message")
+                send_chat_action(api_base, from_chat_id, "typing")
+                if reply_to and reply_to.get("text"):
+                    orig_context = reply_to.get("text", "")
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}][{channel_name}] 處理訊息引用追問...", flush=True)
+                    answer = answer_reply_question(channel_id, orig_context, text)
+                    send_message(answer, channel=channel_id)
+                elif text:
+                    # 玩法 2：專屬領域專家直接對話諮詢
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}][{channel_name}] 處理專家直接諮詢...", flush=True)
+                    answer = answer_direct_question(channel_id, text)
+                    send_message(answer, channel=channel_id)
 
         time.sleep(1)
 
