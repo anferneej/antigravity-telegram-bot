@@ -20,6 +20,13 @@
     "token_env": "TG_BOT_TOKEN_TECH",
     "chat_id_env": "TG_CHAT_ID_TECH"
   },
+  "youtube": {
+    "id": "youtube",
+    "name": "🎬 影音精選情報 Bot",
+    "description": "YouTube 說書、個人成長與知識影音深度重點分析",
+    "token_env": "TG_BOT_TOKEN_YOUTUBE",
+    "chat_id_env": "TG_CHAT_ID_YOUTUBE"
+  },
   "default": {
     "id": "default",
     "name": "🤖 綜合預設 Bot",

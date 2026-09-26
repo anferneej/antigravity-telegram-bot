@@ -159,7 +159,7 @@ def main():
             print(f"名稱    : {site['name']}")
             print(f"頻道 ID : {site['id']}")
             print(f"RSS 網址: {site['url']}")
-            print(f"推播 Bot: {site['target_bot']} (@Anf_home_bot)")
+            print(f"推播 Bot: {site['target_bot']} 頻道")
             print("──────────────────────────────────────────────────\n")
         else:
             print(f"❌ 加入失敗: {res.get('error')}")

@@ -295,7 +295,7 @@ def add_youtube_channel_to_sites(url_or_handle: str, custom_name: Optional[str] 
         if s.get("id") == site_id or s.get("url") == feed_url:
             s["enabled"] = True
             s["name"] = channel_name
-            s["target_bot"] = "default"
+            s["target_bot"] = "youtube"
             s["type"] = "youtube"
             with open(SITES_FILE, "w", encoding="utf-8") as f:
                 json.dump(sites, f, ensure_ascii=False, indent=2)
@@ -312,7 +312,7 @@ def add_youtube_channel_to_sites(url_or_handle: str, custom_name: Optional[str] 
         "url": feed_url,
         "original_url": info["original_url"],
         "type": "youtube",
-        "target_bot": "default",
+        "target_bot": "youtube",
         "enabled": True,
         "description": f"YouTube 頻道《{channel_name}》最新發布影片深度重點分析"
     }

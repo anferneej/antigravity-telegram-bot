@@ -292,7 +292,7 @@ def scrape_youtube(site, target_date, history_links, max_items, timeout, target_
                 "bullets": bullets,
                 "site_id": site.get("id", ""),
                 "site_name": site.get("name", "YouTube 影片"),
-                "target_bot": "default"  # 一律強制推送到 default
+                "target_bot": site.get("target_bot", "youtube")
             })
 
             if len(items) >= max_items:
@@ -345,10 +345,9 @@ def fetch_today_news():
         else:
             items = scrape_html(site, now, sent_links, max_items, timeout, target_tz)
 
-        # YouTube 頻道強制確保 target_bot 是 default
-        if site_type in ["youtube", "yt"] or "youtube.com/feeds/videos.xml" in site_url:
-            for item in items:
-                item["target_bot"] = "default"
+        target_bot = site.get("target_bot", "default")
+        for item in items:
+            item["target_bot"] = target_bot
 
         if items:
             results_by_site[site_name] = items
