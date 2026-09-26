@@ -25,7 +25,7 @@ from src.scraper import load_settings, load_sites, DATA_DIR, HISTORY_FILE
 
 
 def cmd_list_sites():
-    """列出目前監控的所有網站"""
+    """列出目前監控的所有網站及其歸屬 Bot"""
     sites = load_sites()
     print("\n📋 【目前監控的目標網站清單】")
     print("──────────────────────────────────────────────────")
@@ -34,10 +34,28 @@ def cmd_list_sites():
         return
     for idx, s in enumerate(sites, 1):
         status = "✅ 啟用中" if s.get("enabled", True) else "⛔ 已停用"
-        print(f"{idx}. [{status}] {s.get('name')} ({s.get('type', 'rss').upper()})")
+        bot_tag = f" -> 🤖 頻道: {s.get('target_bot', 'default')}"
+        print(f"{idx}. [{status}] {s.get('name')} ({s.get('type', 'rss').upper()}){bot_tag}")
         print(f"   網址: {s.get('url')}")
         if s.get("description"):
             print(f"   說明: {s.get('description')}")
+    print("──────────────────────────────────────────────────\n")
+
+
+def cmd_list_bots():
+    """列出所有 Telegram Bot 頻道與連線配置狀態"""
+    from src.telegram_notifier import load_bots_definition, get_bot_credentials
+    bots_def = load_bots_definition()
+    print("\n🤖 【Telegram Bot 頻道配置狀態】")
+    print("──────────────────────────────────────────────────")
+    for b_id, b_info in bots_def.items():
+        token, chat_ids, name = get_bot_credentials(b_id)
+        token_mask = f"{token[:8]}...{token[-4:]}" if token and len(token) > 12 else "（未設定）"
+        target_display = ", ".join(chat_ids) if chat_ids else "（未設定）"
+        print(f"• 頻道 ID: [{b_id}] ｜ 名稱: {name}")
+        print(f"  Token: {token_mask}")
+        print(f"  目標 Chat ID: {target_display}")
+        print(f"  說明: {b_info.get('description', '')}\n")
     print("──────────────────────────────────────────────────\n")
 
 
@@ -98,7 +116,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="AntiGravity Telegram 今日情報抓取與多時間排程推播系統"
     )
-    parser.add_argument("--test-tg", action="store_true", help="測試 Telegram 機器人連線與 Chat ID")
+    parser.add_argument("--test-tg", type=str, nargs="?", const="all", help="測試 Telegram 機器人連線（可指定頻道如 finance, reading, tech 或 all）")
+    parser.add_argument("--list-bots", action="store_true", help="檢視所有 Telegram Bot 頻道與設定狀態")
     parser.add_argument("--once", action="store_true", help="立即執行一次抓取並推播今日新消息")
     parser.add_argument("--daemon", action="store_true", help="啟動多時間點背景定時監聽服務")
     parser.add_argument("--list-times", action="store_true", help="檢視目前設定的所有指定推播時間")
@@ -113,9 +132,20 @@ def main():
 
     args = parser.parse_args()
 
-    if args.test_tg:
-        success, msg = test_connection()
-        print(f"[{'成功' if success else '失敗'}] {msg}")
+    if args.list_bots:
+        cmd_list_bots()
+    elif args.test_tg is not None:
+        from src.telegram_notifier import load_bots_definition
+        target_ch = args.test_tg
+        if target_ch == "all":
+            bots_def = load_bots_definition()
+            print("🚀 開始測試所有已設定的 Bot 頻道連線...")
+            for ch in bots_def.keys():
+                success, msg = test_connection(ch)
+                print(f"[{'成功' if success else '失敗'}] {msg}")
+        else:
+            success, msg = test_connection(target_ch)
+            print(f"[{'成功' if success else '失敗'}] {msg}")
     elif args.once:
         run_check_and_notify()
     elif args.listen or args.daemon:

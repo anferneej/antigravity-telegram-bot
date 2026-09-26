@@ -28,7 +28,15 @@ description: AntiGravity Telegram 情報推播與定時檢查技能。可抓取�
    ```bash
    python src/main.py --once
    ```
-3. **「查看推播時間」**：
+3. **「查看機器人頻道配置」**：
+   ```bash
+   python src/main.py --list-bots
+   ```
+4. **「測試所有 Bot 連線」**：
+   ```bash
+   python src/main.py --test-tg all
+   ```
+5. **「查看推播時間」**：
    ```bash
    python src/main.py --list-times
    ```

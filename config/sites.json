@@ -1,10 +1,61 @@
 [
   {
+    "id": "wearn_hot",
+    "name": "聚財網焦點話題",
+    "url": "https://feeds.feedburner.com/hot_topics_wearncom?format=xml",
+    "original_url": "https://feeds.feedburner.com/hot_topics_wearncom?format=xml",
+    "type": "rss",
+    "target_bot": "finance",
+    "enabled": true,
+    "description": "聚財網 Feedburner 熱門焦點投資話題"
+  },
+  {
+    "id": "wearn_latest",
+    "name": "聚財網最新話題",
+    "url": "https://feeds.feedburner.com/Wearncom-?format=xml",
+    "original_url": "https://feeds.feedburner.com/Wearncom-?format=xml",
+    "type": "rss",
+    "target_bot": "finance",
+    "enabled": true,
+    "description": "聚財網 Feedburner 最新發文話題"
+  },
+  {
+    "id": "wsj_chinese_traditional",
+    "name": "華爾街日報 (WSJ 繁體中文熱門)",
+    "url": "https://wsj.buzzing.cc/zh-Hant/feed.xml",
+    "original_url": "https://cn.wsj.com/rss-news-and-feeds/zh-hant",
+    "type": "rss",
+    "target_bot": "finance",
+    "enabled": true,
+    "description": "華爾街日報繁體中文即時熱門新聞與財經焦點"
+  },
+  {
+    "id": "digitimes_supplychain",
+    "name": "DIGITIMES (電子時報・產經與供應鏈)",
+    "url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_90_0.xml",
+    "original_url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_90_0.xml",
+    "type": "rss",
+    "target_bot": "finance",
+    "enabled": true,
+    "description": "兩岸科技產業脈動與全球科技供應鏈深入報導"
+  },
+  {
+    "id": "reading_outpost",
+    "name": "閱讀前哨站 (瓦基讀書心得)",
+    "url": "https://readingoutpost.com/feed/",
+    "original_url": "https://readingoutpost.com/reading/",
+    "type": "rss",
+    "target_bot": "reading",
+    "enabled": true,
+    "description": "瓦基閱讀前哨站最新說書、閱讀心得與個人成長文章"
+  },
+  {
     "id": "tanja_read",
     "name": "坦雅讀一讀 (Blogger)",
     "url": "https://tanjaread.blogspot.com/feeds/posts/default?alt=rss",
     "original_url": "https://tanjaread.blogspot.com/",
     "type": "rss",
+    "target_bot": "reading",
     "enabled": true,
     "description": "坦雅讀一讀部落格最新文章"
   },
@@ -14,6 +65,7 @@
     "url": "https://vocus.cc/api/rss/user/5a41f40beceaedd6be9169a1/articles",
     "original_url": "https://vocus.cc/user/@77reading",
     "type": "rss",
+    "target_bot": "reading",
     "enabled": true,
     "description": "方格子創作者 @77reading 最新發文"
   },
@@ -23,6 +75,7 @@
     "url": "https://vocus.cc/api/rss/salon/6718c728fd897800013a2b22/articles",
     "original_url": "https://vocus.cc/salon/6718c728fd897800013a2b22",
     "type": "rss",
+    "target_bot": "reading",
     "enabled": true,
     "description": "方格子沙龍 6718c728fd897800013a2b22 最新文章"
   },
@@ -32,26 +85,9 @@
     "url": "https://technews.tw/feed/",
     "original_url": "https://technews.tw/tag/rss/",
     "type": "rss",
+    "target_bot": "tech",
     "enabled": true,
     "description": "科技新報官方即時新聞全站 RSS Feed"
-  },
-  {
-    "id": "wsj_chinese_traditional",
-    "name": "華爾街日報 (WSJ 繁體中文熱門)",
-    "url": "https://wsj.buzzing.cc/zh-Hant/feed.xml",
-    "original_url": "https://cn.wsj.com/rss-news-and-feeds/zh-hant",
-    "type": "rss",
-    "enabled": true,
-    "description": "華爾街日報繁體中文即時熱門新聞與財經焦點"
-  },
-  {
-    "id": "reading_outpost",
-    "name": "閱讀前哨站 (瓦基讀書心得)",
-    "url": "https://readingoutpost.com/feed/",
-    "original_url": "https://readingoutpost.com/reading/",
-    "type": "rss",
-    "enabled": true,
-    "description": "瓦基閱讀前哨站最新說書、閱讀心得與個人成長文章"
   },
   {
     "id": "digitimes_focus",
@@ -59,6 +95,7 @@
     "url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_0.xml",
     "original_url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_0.xml",
     "type": "rss",
+    "target_bot": "tech",
     "enabled": true,
     "description": "半導體、AI 伺服器與全球資通訊即時焦點"
   },
@@ -68,16 +105,8 @@
     "url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_0.xml",
     "original_url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_0.xml",
     "type": "rss",
+    "target_bot": "tech",
     "enabled": true,
     "description": "DIGITIMES 深度產業研究與市場數據分析報告"
-  },
-  {
-    "id": "digitimes_supplychain",
-    "name": "DIGITIMES (電子時報・產經與供應鏈)",
-    "url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_90_0.xml",
-    "original_url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_90_0.xml",
-    "type": "rss",
-    "enabled": true,
-    "description": "兩岸科技產業脈動與全球科技供應鏈深入報導"
   }
 ]

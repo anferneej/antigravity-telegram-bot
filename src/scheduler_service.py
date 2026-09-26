@@ -27,7 +27,7 @@ def write_push_log(message: str):
         f.write(f"[{timestamp}] {message}\n")
 
 from .scraper import fetch_today_news, load_settings
-from .telegram_notifier import send_message, format_daily_news_message
+from .telegram_notifier import send_message
 
 
 def save_settings(settings):
@@ -85,32 +85,12 @@ def remove_schedule_time(time_str: str):
 
 
 def run_check_and_notify():
-    """執行一次完整的今日新聞抓取並推播"""
-    print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 開始執行目標站點今日消息抓取...")
-    today_str, news_by_site, new_items = fetch_today_news()
-
-    if not new_items:
-        msg = f"[{today_str}] 檢查完成：目前沒有符合條件的新消息需推播（或今日更新皆已推播過）。"
-        print(msg)
-        write_push_log(msg)
-        return False, "無新消息需推播"
-
-    print(f"[{today_str}] 成功抓取到 {len(new_items)} 則新消息，準備推播至 Telegram...")
-    msg_html = format_daily_news_message(today_str, news_by_site)
-    success = send_message(msg_html)
-
-    if success:
-        log_msg = f"🎉 成功推播 {len(new_items)} 則消息至 Telegram！\n"
-        for it in new_items:
-            log_msg += f"   - [{it.get('site_name')}] {it.get('title')} ({it.get('link')})\n"
-        print(f"[{today_str}] {log_msg.strip()}")
-        write_push_log(log_msg.strip())
-        return True, f"成功推播 {len(new_items)} 則消息"
-    else:
-        err_msg = f"[{today_str}] ⚠️ 推播過程發生部分或全部失敗，請檢查 Telegram 憑證與網路設定。"
-        print(err_msg, file=sys.stderr)
-        write_push_log(err_msg)
-        return False, "發送失敗"
+    """執行一次完整的今日情報抓取，並依 target_bot 分流推播至對應 Telegram Bot"""
+    from src.agent_workflow import get_pending_today_articles, run_multi_bot_dispatch
+    print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 開始執行目標站點今日消息抓取與多 Bot 分流...")
+    today_str, pending_articles = get_pending_today_articles()
+    success, msg = run_multi_bot_dispatch(today_str, pending_articles)
+    return success, msg
 
 
 def start_scheduler_daemon():
