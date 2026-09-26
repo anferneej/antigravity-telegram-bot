@@ -52,5 +52,32 @@
     "type": "rss",
     "enabled": true,
     "description": "瓦基閱讀前哨站最新說書、閱讀心得與個人成長文章"
+  },
+  {
+    "id": "digitimes_focus",
+    "name": "DIGITIMES (電子時報・科技焦點)",
+    "url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_0.xml",
+    "original_url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_10_0.xml",
+    "type": "rss",
+    "enabled": true,
+    "description": "半導體、AI 伺服器與全球資通訊即時焦點"
+  },
+  {
+    "id": "digitimes_research",
+    "name": "DIGITIMES (電子時報・產業研究報告)",
+    "url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_0.xml",
+    "original_url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_30_0.xml",
+    "type": "rss",
+    "enabled": true,
+    "description": "DIGITIMES 深度產業研究與市場數據分析報告"
+  },
+  {
+    "id": "digitimes_supplychain",
+    "name": "DIGITIMES (電子時報・產經與供應鏈)",
+    "url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_90_0.xml",
+    "original_url": "https://www.digitimes.com.tw/tech/rss/xml/xmlrss_90_0.xml",
+    "type": "rss",
+    "enabled": true,
+    "description": "兩岸科技產業脈動與全球科技供應鏈深入報導"
   }
 ]

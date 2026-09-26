@@ -13,7 +13,7 @@ import feedparser
 from dateutil import parser as date_parser
 import pytz
 
-from .summarizer import summarize_article
+from .summarizer import summarize_article_professional
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT_DIR / "config"
@@ -150,13 +150,15 @@ def scrape_rss(site, target_date, history_links, max_items, timeout, target_tz):
             if not raw_desc and hasattr(entry, "content"):
                 raw_desc = "".join([c.get("value", "") for c in entry.content])
 
-            ai_summary = summarize_article(title, link, raw_desc)
+            bullets = summarize_article_professional(title, link, raw_desc)
+            formatted_summary = "\n".join([f"• {b}" for b in bullets])
 
             items.append({
                 "title": title,
                 "link": link,
                 "time_str": time_str,
-                "summary": ai_summary,
+                "summary": formatted_summary,
+                "bullets": bullets,
                 "site_id": site.get("id", ""),
                 "site_name": site.get("name", "未命名")
             })
@@ -215,13 +217,15 @@ def scrape_html(site, target_date, history_links, max_items, timeout, target_tz)
                         continue
                     time_str = raw_time[:16]
 
-            ai_summary = summarize_article(title, link, "")
+            bullets = summarize_article_professional(title, link, "")
+            formatted_summary = "\n".join([f"• {b}" for b in bullets])
 
             items.append({
                 "title": title,
                 "link": link,
                 "time_str": time_str,
-                "summary": ai_summary,
+                "summary": formatted_summary,
+                "bullets": bullets,
                 "site_id": site.get("id", ""),
                 "site_name": site.get("name", "未命名")
             })
