@@ -130,9 +130,40 @@ def main():
     parser.add_argument("--install-scheduler", action="store_true", help="將指定時間自動註冊為 Windows 原生工作排程")
     parser.add_argument("--uninstall-scheduler", action="store_true", help="移除 Windows 上的定時排程")
 
+    parser.add_argument("--resolve-yt", type=str, help="解析 YouTube 頻道網址或 handle 為官方 RSS Feed")
+    parser.add_argument("--add-yt", type=str, help="自動解析 YouTube 網址並加入監控清單（預設推播至 default Bot）")
+    parser.add_argument("--name", type=str, help="搭配 --add-yt 指定自訂頻道名稱（選填）")
+
     args = parser.parse_args()
 
-    if args.list_bots:
+    if args.resolve_yt:
+        from src.youtube_helper import resolve_youtube_channel
+        res = resolve_youtube_channel(args.resolve_yt)
+        if res:
+            print("\n✅ 【YouTube 頻道 RSS 解析成功】")
+            print("──────────────────────────────────────────────────")
+            print(f"頻道名稱: {res['channel_name']}")
+            print(f"頻道 ID  : {res['channel_id']}")
+            print(f"官方 RSS : {res['feed_url']}")
+            print(f"原始網址: {res['original_url']}")
+            print("──────────────────────────────────────────────────\n")
+        else:
+            print(f"❌ 無法解析 YouTube 網址：{args.resolve_yt}")
+    elif args.add_yt:
+        from src.youtube_helper import add_youtube_channel_to_sites
+        res = add_youtube_channel_to_sites(args.add_yt, args.name)
+        if res["success"]:
+            site = res["site"]
+            print(f"\n🎉 成功加入 YouTube 頻道監控！")
+            print("──────────────────────────────────────────────────")
+            print(f"名稱    : {site['name']}")
+            print(f"頻道 ID : {site['id']}")
+            print(f"RSS 網址: {site['url']}")
+            print(f"推播 Bot: {site['target_bot']} (@Anf_home_bot)")
+            print("──────────────────────────────────────────────────\n")
+        else:
+            print(f"❌ 加入失敗: {res.get('error')}")
+    elif args.list_bots:
         cmd_list_bots()
     elif args.test_tg is not None:
         from src.telegram_notifier import load_bots_definition

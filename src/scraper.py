@@ -239,6 +239,71 @@ def scrape_html(site, target_date, history_links, max_items, timeout, target_tz)
     return items
 
 
+def scrape_youtube(site, target_date, history_links, max_items, timeout, target_tz):
+    """解析 YouTube 頻道 RSS 並進行詳細深度影片重點分析"""
+    try:
+        from .youtube_helper import analyze_youtube_video_detailed
+    except ImportError:
+        from youtube_helper import analyze_youtube_video_detailed
+
+    url = site["url"]
+    items = []
+    try:
+        resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=timeout)
+        feed = feedparser.parse(resp.text)
+
+        for entry in feed.entries:
+            link = entry.get("link", "").strip()
+            title = entry.get("title", "").strip()
+            if not link or not title:
+                continue
+
+            if link in history_links:
+                continue
+
+            pub_date = None
+            if hasattr(entry, "published_parsed") and entry.published_parsed:
+                pub_date = parse_date_safely(entry.published_parsed, target_tz)
+            elif hasattr(entry, "published") and entry.published:
+                pub_date = parse_date_safely(entry.published, target_tz)
+
+            if pub_date:
+                if not is_published_today(pub_date, target_date):
+                    continue
+                time_str = pub_date.strftime("%H:%M")
+            else:
+                time_str = ""
+
+            raw_desc = ""
+            if hasattr(entry, "media_description"):
+                raw_desc = entry.media_description
+            elif hasattr(entry, "summary"):
+                raw_desc = entry.summary
+
+            # 呼叫影片詳細分析（字數不限，提煉詳細重點）
+            bullets = analyze_youtube_video_detailed(title, link, raw_desc, max_bullets=6)
+            formatted_summary = "\n".join([f"• {b}" for b in bullets])
+
+            items.append({
+                "title": f"🎬 {title}",
+                "link": link,
+                "time_str": time_str,
+                "summary": formatted_summary,
+                "bullets": bullets,
+                "site_id": site.get("id", ""),
+                "site_name": site.get("name", "YouTube 影片"),
+                "target_bot": "default"  # 一律強制推送到 default
+            })
+
+            if len(items) >= max_items:
+                break
+
+    except Exception as e:
+        print(f"[Scraper Error] YouTube 抓取失敗 ({site.get('name')}): {e}", file=sys.stderr)
+
+    return items
+
+
 def fetch_today_news():
     """
     主要抓取流程：
@@ -270,11 +335,20 @@ def fetch_today_news():
 
         site_type = site.get("type", "rss").lower()
         site_name = site.get("name", "未命名")
+        site_url = site.get("url", "")
 
-        if site_type == "rss":
+        # 判定是否為 YouTube 頻道
+        if site_type in ["youtube", "yt"] or "youtube.com/feeds/videos.xml" in site_url:
+            items = scrape_youtube(site, now, sent_links, max_items, timeout, target_tz)
+        elif site_type == "rss":
             items = scrape_rss(site, now, sent_links, max_items, timeout, target_tz)
         else:
             items = scrape_html(site, now, sent_links, max_items, timeout, target_tz)
+
+        # YouTube 頻道強制確保 target_bot 是 default
+        if site_type in ["youtube", "yt"] or "youtube.com/feeds/videos.xml" in site_url:
+            for item in items:
+                item["target_bot"] = "default"
 
         if items:
             results_by_site[site_name] = items
