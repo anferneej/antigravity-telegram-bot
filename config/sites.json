@@ -1,0 +1,56 @@
+[
+  {
+    "id": "tanja_read",
+    "name": "坦雅讀一讀 (Blogger)",
+    "url": "https://tanjaread.blogspot.com/feeds/posts/default?alt=rss",
+    "original_url": "https://tanjaread.blogspot.com/",
+    "type": "rss",
+    "enabled": true,
+    "description": "坦雅讀一讀部落格最新文章"
+  },
+  {
+    "id": "vocus_77reading",
+    "name": "77reading (方格子 Vocus)",
+    "url": "https://vocus.cc/api/rss/user/5a41f40beceaedd6be9169a1/articles",
+    "original_url": "https://vocus.cc/user/@77reading",
+    "type": "rss",
+    "enabled": true,
+    "description": "方格子創作者 @77reading 最新發文"
+  },
+  {
+    "id": "vocus_richy_salon",
+    "name": "Richy's 辦公室 (方格子沙龍)",
+    "url": "https://vocus.cc/api/rss/salon/6718c728fd897800013a2b22/articles",
+    "original_url": "https://vocus.cc/salon/6718c728fd897800013a2b22",
+    "type": "rss",
+    "enabled": true,
+    "description": "方格子沙龍 6718c728fd897800013a2b22 最新文章"
+  },
+  {
+    "id": "technews_main",
+    "name": "科技新報 (TechNews 即時快訊)",
+    "url": "https://technews.tw/feed/",
+    "original_url": "https://technews.tw/tag/rss/",
+    "type": "rss",
+    "enabled": true,
+    "description": "科技新報官方即時新聞全站 RSS Feed"
+  },
+  {
+    "id": "wsj_chinese_traditional",
+    "name": "華爾街日報 (WSJ 繁體中文熱門)",
+    "url": "https://wsj.buzzing.cc/zh-Hant/feed.xml",
+    "original_url": "https://cn.wsj.com/rss-news-and-feeds/zh-hant",
+    "type": "rss",
+    "enabled": true,
+    "description": "華爾街日報繁體中文即時熱門新聞與財經焦點"
+  },
+  {
+    "id": "reading_outpost",
+    "name": "閱讀前哨站 (瓦基讀書心得)",
+    "url": "https://readingoutpost.com/feed/",
+    "original_url": "https://readingoutpost.com/reading/",
+    "type": "rss",
+    "enabled": true,
+    "description": "瓦基閱讀前哨站最新說書、閱讀心得與個人成長文章"
+  }
+]
