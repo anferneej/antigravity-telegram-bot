@@ -151,5 +151,69 @@
     "target_bot": "tech",
     "enabled": true,
     "description": "全球矽谷科技巨頭動態與新創融資情報 (自動翻譯繁中摘要)"
+  },
+  {
+    "id": "books_okapi",
+    "name": "博客來 OKAPI (閱讀生活誌)",
+    "url": "https://okapi.books.com.tw/search/latest?loc=newlist",
+    "original_url": "https://okapi.books.com.tw/search/latest?loc=newlist",
+    "type": "html",
+    "item_selector": "li",
+    "title_selector": "div.content h3 a",
+    "link_selector": "div.content h3 a",
+    "date_selector": "p.article-info",
+    "target_bot": "reading",
+    "enabled": true,
+    "description": "博客來 OKAPI 最新深度書評、作家專訪與閱讀生活選書"
+  },
+  {
+    "id": "yt_UC1tp9qN7mqIJ7CLVNVvsKzg",
+    "name": "🎬 冏星人 (YouTube 說書與知識評析)",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UC1tp9qN7mqIJ7CLVNVvsKzg",
+    "original_url": "https://www.youtube.com/@shintaroReview",
+    "type": "youtube",
+    "target_bot": "default",
+    "enabled": true,
+    "description": "冏星人 YouTube 頻道最新影音重點與深度評析"
+  },
+  {
+    "id": "yt_UCPgGtH2PxZ9xR0ehzQ27FHw",
+    "name": "🎬 文森說書 (YouTube 精選說書)",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCPgGtH2PxZ9xR0ehzQ27FHw",
+    "original_url": "https://www.youtube.com/@vincent_reading",
+    "type": "youtube",
+    "target_bot": "default",
+    "enabled": true,
+    "description": "文森說書 YouTube 頻道最新精華好書說書影片重點分析"
+  },
+  {
+    "id": "yt_UCQbyKhmFHIRptrAJMSwS-dw",
+    "name": "🎬 NeKo嗚喵 (YouTube 說書書評)",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCQbyKhmFHIRptrAJMSwS-dw",
+    "original_url": "https://www.youtube.com/@NeKo_Wumiao",
+    "type": "youtube",
+    "target_bot": "default",
+    "enabled": true,
+    "description": "NeKo嗚喵 YouTube 頻道最新說書、生活哲學與閱讀選書重點分析"
+  },
+  {
+    "id": "yt_UCc1rNJSBIks2LUsG2vYeZWA",
+    "name": "🎬 思維咖啡 (YouTube 認知成長)",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCc1rNJSBIks2LUsG2vYeZWA",
+    "original_url": "https://www.youtube.com/@mindcoffee",
+    "type": "youtube",
+    "target_bot": "default",
+    "enabled": true,
+    "description": "思維咖啡 YouTube 頻道商業思維、心理學與個人成長重點解析"
+  },
+  {
+    "id": "yt_UChjHWpmNm-3HbLFkQ3TPXaA",
+    "name": "🎬 Better Leaf 好葉 (YouTube 動畫說書)",
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UChjHWpmNm-3HbLFkQ3TPXaA",
+    "original_url": "https://www.youtube.com/@betterleaf",
+    "type": "youtube",
+    "target_bot": "default",
+    "enabled": true,
+    "description": "好葉 YouTube 頻道個人成長、動畫書摘與高效思維影片重點解析"
   }
 ]
